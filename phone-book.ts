@@ -1,3 +1,5 @@
+// неявная сортировка
+
 /**
  * Сделано задание на звездочку
  * Реализован метод importFromCsv
@@ -10,8 +12,18 @@ interface IPhoneBook {
 /**
  * Телефонная книга
  */
-const phoneBook: IPhoneBook = {};
+let phoneBook: IPhoneBook = {};
 
+function validateContact(phone: string, name: string): boolean {
+
+    const isValidPhone = (typeof (phone) === 'string') && /^\d{10}$/.test(phone);
+    const isValidName = (typeof (name) === 'string') && name.trim().length !== 0;
+
+    if (isValidPhone && isValidName) {
+        return true
+    }
+    return false
+}
 
 /**
  * Добавление записи в телефонную книгу
@@ -21,14 +33,17 @@ const phoneBook: IPhoneBook = {};
  * @param {String} [email]
  * @returns {Boolean}
  */
+
 export function add(phone: string, name: string, email?: string): boolean {
 
-    const isValidPhone = (typeof (phone) === 'string') && /^\d{10}$/.test(phone);
-    const isValidName = (typeof (name) === 'string') && name.trim().length !== 0;
     const isPhoneExist = !!phoneBook[phone];
 
-    if (isValidPhone && isValidName && !isPhoneExist) {
-        phoneBook[phone] = [name, email];
+    if (validateContact(phone, name) && !isPhoneExist) {
+        if (email) {
+            phoneBook[phone] = [name, email];
+        } else {
+            phoneBook[phone] = [name];
+        }
         return true;
     }
     return false;
@@ -42,14 +57,17 @@ export function add(phone: string, name: string, email?: string): boolean {
  * @param {String} [email]
  * @returns {Boolean}
  */
+
 export function update(phone: string, name: string, email?: string): boolean {
 
-    const isValidPhone = (typeof (phone) === 'string') && /^\d{10}$/.test(phone);
-    const isValidName = (typeof (name) === 'string') && name.trim().length !== 0;
     const isPhoneExist = !!phoneBook[phone];
 
-    if (isValidPhone || isValidName || isPhoneExist) {
-        phoneBook[phone] = [name, email];
+    if (validateContact(phone, name) && isPhoneExist) {
+        if (email) {
+            phoneBook[phone] = [name, email];
+        } else {
+            phoneBook[phone] = [name];
+        }
         return true;
     }
     return false;
@@ -57,7 +75,7 @@ export function update(phone: string, name: string, email?: string): boolean {
 
 function filterPhoneBook(query: string): string[] {
 
-    if (query === '') {
+    if (!query) {
         return [];
     }
 
@@ -83,18 +101,31 @@ function filterPhoneBook(query: string): string[] {
 
 }
 
+function sortFunction(a, b) {
+    if (a > b) {
+        return 1;
+    }
+    if (b > a) {
+        return -1;
+    }
+    return 0;
+}
 
 /**
  * Удаление записей по запросу из телефонной книги
  * @param {String} query   
  * @returns {Number}
  */
+
 export function findAndRemove(query: string): number {
     let deletedCount = 0
     const fiteredContacts = filterPhoneBook(query)
 
     fiteredContacts.forEach((element) => {
-        delete phoneBook[element]
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [element]: phone, ...newPhoneBook } = phoneBook;
+        phoneBook = newPhoneBook
         deletedCount++
     })
 
@@ -107,6 +138,7 @@ export function findAndRemove(query: string): number {
  * @param {String} query
  * @returns {String[]}
  */
+
 export function find(query: string): string[] {
 
     const fiteredContacts = filterPhoneBook(query)
@@ -125,7 +157,7 @@ export function find(query: string): string[] {
         }
     })
 
-    return parsedPhoneBook.sort()
+    return parsedPhoneBook.sort(sortFunction)
 }
 
 export const importFromCsv = (csv: string): number => {
@@ -139,13 +171,18 @@ export const importFromCsv = (csv: string): number => {
 
     csvStringsFormat.forEach((element, i) => {
         const contact = csvStringsFormat[i].split(';')
-        if (contact[2]) {
-            if (update(contact[1], contact[0], contact[2]) || add(contact[1], contact[0], contact[2])) {
+
+        const phone = contact[1]
+        const name = contact[0]
+        const email = contact[2]
+
+        if (email) {
+            if (update(phone, name, email) || add(phone, name, email)) {
                 counter++
             }
         }
         else {
-            if (update(contact[1], contact[0]) || add(contact[1], contact[0])) {
+            if (update(phone, name) || add(phone, name)) {
                 counter++
             }
         }
